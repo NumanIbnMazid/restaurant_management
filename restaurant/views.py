@@ -778,7 +778,7 @@ class FoodOrderViewSet(LoggingMixin, CustomViewSet):
 
     def get_permissions(self):
         permission_classes = []
-        if self.action in ['apps_cancel_order', 'create_order',"create_order_apps", 'customer_order_history', 'add_items', 'cancel_order', 'placed_status', 'confirm_status', 'cancel_items', 'in_table_status', 'create_invoice']:
+        if self.action in ['apps_cancel_order', 'create_order', "create_order_apps", 'customer_order_history', 'add_items', 'cancel_order', 'placed_status', 'confirm_status', 'cancel_items', 'in_table_status', 'create_invoice']:
             permission_classes = [permissions.IsAuthenticated]
         if self.action in ['create_take_away_order']:
             permission_classes = [
@@ -1414,12 +1414,14 @@ class FoodOrderViewSet(LoggingMixin, CustomViewSet):
         return ResponseWrapper(data=serializer.data, msg='Table Transfer')
 
     def customer_order_history(self, request, *args, **kwargs):
-        order_qs = FoodOrder.objects.filter(customer__user=request.user.pk, status = '5_PAID').order_by('-created_at')
+        order_qs = FoodOrder.objects.filter(
+            customer__user=request.user.pk, status='5_PAID').order_by('-created_at')
        # page_qs = self.paginate_queryset(order_qs)
-        serializer = CustomerOrderDetailsSerializer(instance=order_qs, many=True)
+        serializer = CustomerOrderDetailsSerializer(
+            instance=order_qs, many=True)
         # paginated_data = self.get_paginated_response(serializer.data)
 
-        return ResponseWrapper(data = serializer.data,msg = 'success')
+        return ResponseWrapper(data=serializer.data, msg='success')
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -2955,7 +2957,7 @@ class PrintOrder(CustomViewSet):
 
         from django.template.loader import render_to_string
         from weasyprint import CSS, HTML
-        items_qs = OrderedItem.objects.all().exclude(food_extra=None)
+        items_qs = OrderedItem.objects.all().exclude(food_extra=None)[:3]
         # order_by('-pk')[:50]
         serializer = OrderedItemTemplateSerializer(
             instance=items_qs, many=True)
@@ -2972,12 +2974,12 @@ class PrintOrder(CustomViewSet):
         # @page { size: Letter; margin: 0cm }
         css = CSS(
             string='@page { size: 80mm 350mm; margin: 0mm }')
-        pdf_byte_code = HTML(string=html_string).write_pdf('ll.pdf',
-                                                           stylesheets=[
-                                                               css], zoom=1
-                                                           )
+        pdf_byte_code = HTML(string=html_string).write_pdf(
+            stylesheets=[
+                css], zoom=1
+        )
         pdf_obj_encoded = base64.b64encode(pdf_byte_code)
         pdf_obj_encoded = pdf_obj_encoded.decode('utf-8')
-        # success = print_node(pdf_obj=pdf_obj_encoded)
+        success = print_node(pdf_obj=pdf_obj_encoded)
 
         return ResponseWrapper(data={'success': True})
