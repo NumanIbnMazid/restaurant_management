@@ -4,6 +4,7 @@ from rest_framework.routers import DefaultRouter
 
 from ..views import *
 
+
 router = DefaultRouter()
 
 
@@ -124,6 +125,9 @@ apps_fake = [
     path('order/table_transfer/',
          FoodOrderViewSet.as_view({'post': 'table_transfer'}, name='table_transfer')),
 
+    path('order/status/<int:order_id>/',
+         FoodOrderViewSet.as_view({'get': 'order_status'}, name='order_status')),
+
     path('reorder/', FoodOrderViewSet.as_view(
         {'post': 'food_reorder_by_order_id'}, name='food_reorder_by_order_id')),
     path('customer_order_history/', FoodOrderViewSet.as_view(
@@ -203,7 +207,11 @@ apps_fake = [
          DiscountViewSet.as_view({'get': 'discount'}), name='discount'),
 
     path('restaurant/<int:restaurant_id>/pop_up/',
-         PopUpViewset.as_view({'get': 'pop_up_list_by_restaurant'}), name='pop_up_list_by_restaurant'),
+         DiscountViewSet.as_view({'get': 'pop_up_list_by_restaurant'}), name='pop_up_list_by_restaurant'),
+
+    # path('discount_pop_up/<int:restaurant>/',
+    #      DiscountViewSet.as_view({'get': 'discount_pop_up'}), name='discount_pop_up'),
+
     path('restaurant/<int:restaurant_id>/slider/',
          SliderViewset.as_view({'get': 'slider_list_by_restaurant'}), name='slider_list_by_restaurant'),
 

@@ -1,5 +1,8 @@
+import restaurant
+from account_management.models import HotelStaffInformation
 import base64
 import json
+from django_q.tasks import async_task
 
 import channels.layers
 from asgiref.sync import async_to_sync, sync_to_async
@@ -14,7 +17,7 @@ from weasyprint import CSS, HTML
 
 from restaurant.models import Table
 from restaurant.serializers import (FoodOrderByTableSerializer,
-                                    OrderedItemTemplateSerializer)
+                                    OrderedItemTemplateSerializer, TableStaffSerializer)
 
 from .models import FoodOrder
 
@@ -48,7 +51,7 @@ def order_item_list(restaurant_id=1):
 
 
 @receiver(order_done_signal)
-def dashboard_update_on_order_change_signals(sender,   restaurant_id, qs=None, data=None, state='data_only', **kwargs):
+def socket_fire_on_order_change_signals(sender,   restaurant_id, order_id=None, qs=None, data=None, state='data_only', **kwargs):
     """
     signal reciever for dashboard update and call websocket connections
 
@@ -65,10 +68,22 @@ def dashboard_update_on_order_change_signals(sender,   restaurant_id, qs=None, d
     """
     if settings.TURN_OFF_SIGNAL:
         return
-    print('---------------------------------------------------------------------------------------------------------------')
-    print("FIRING Signals")
-    print('---------------------------------------------------------------------------------------------------------------')
+    # print('---------------------------------------------------------------------------------------------------------------')
+    # print("FIRING Signals")
+    # print('---------------------------------------------------------------------------------------------------------------')
+    async_task('restaurant.tasks.socket_fire_task_on_order_crud',
+               restaurant_id, order_id, state, data)
+    # socket_fire_task_on_order_crud(restaurant_id, order_id, state, data)
+
+
+def socket_fire_task_on_order_crud(restaurant_id, order_id, state, data):
     response_data = {}
+    # staff_list = HotelStaffInformation.objects.filter(
+    #     restaurant_id=restaurant_id,).values_list('pk', flat=True)
+    table_qs = Table.objects.filter(restaurant_id=restaurant_id,
+                                    food_orders__id=order_id).prefetch_related('food_orders').order_by('table_no').distinct()
+    staff_list = list(table_qs.values_list('staff_assigned__pk', flat=True))
+
     if state in ['data_only']:
         if not data:
             data = order_item_list(restaurant_id)
@@ -78,22 +93,17 @@ def dashboard_update_on_order_change_signals(sender,   restaurant_id, qs=None, d
     try:
         group_name = 'restaurant_%s' % int(restaurant_id)
 
-        # sync_to_async(layer.group_send)(group_name), {
-        #     'type': 'send_message_to_frontend',
-        #     'data': response_data,
-
-        # })
         async_to_sync(layer.group_send)(
             group_name, {'type': 'response_to_listener', 'data': response_data})
+        for staff_id in staff_list:
+            waiter_group_name = 'waiter_%s' % staff_id
+            qs = table_qs.filter(
+                staff_assigned=staff_id).order_by('table_no')
+            serializer = TableStaffSerializer(instance=qs, many=True)
+            async_to_sync(layer.group_send)(
+                waiter_group_name, {'type': 'response_to_listener', 'data': serializer.data})
 
-        # layer.group_send(
-        #     str(res_id),
-        #     {
-        #         'type': 'send_message_to_frontend',
-        #         'message': message,
-        #     }
-        # )
-        print('done')
+        # print('done')
     except:
         pass
     # print('signal got a call', order_qs, table_qs, state)
@@ -106,7 +116,7 @@ def kitchen_items_print(sender, qs=None, *args, **kwargs):
         instance=qs, many=True)
     context = {
         'table_no': qs.values_list('food_order__table__table_no', flat=True).distinct().last(),
-        'order_id': qs.values_list('food_order_id', flat=True).distinct().last(),
+        'order_id': qs.values_list('food_order__order_no', flat=True).distinct().last(),
         'date': str(timezone.now().strftime('%d/%m/%Y')),
         'time': str(timezone.now().strftime("%I:%M %p")),
         'items_data': serializer.data

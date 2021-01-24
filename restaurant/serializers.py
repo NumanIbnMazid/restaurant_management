@@ -357,6 +357,7 @@ class FoodOrderByTableSerializer(serializers.ModelSerializer):
     class Meta:
         model = FoodOrder
         fields = ['id',
+                  'order_no',
                   "remarks",
                   "table",
                   "status",
@@ -473,6 +474,7 @@ class FoodOrderSerializer(FoodOrderByTableSerializer):
 
     class Meta(FoodOrderByTableSerializer.Meta):
         fields = ['id',
+                  'order_no',
                   "remarks",
                   'status_detail',
                   "table",
@@ -489,6 +491,7 @@ class FoodOrderForStaffSerializer(serializers.ModelSerializer):
     class Meta:
         model = FoodOrder
         fields = ['id',
+                  'order_no',
                   "remarks",
                   "table",
                   "status",
@@ -512,10 +515,19 @@ class FoodOrderUserPostSerializer(serializers.ModelSerializer):
     ordered_items = OrderedItemSerializer(
         many=True, read_only=True, required=False)
     status = serializers.CharField(read_only=True)
+    # order_no = serializers.CharField(source='order_no',read_only=True)
 
     class Meta:
         model = FoodOrder
-        fields = ['ordered_items', 'table', 'remarks', 'status', 'id']
+        fields = ['ordered_items', 'table',
+                  'remarks', 'status', 'id', 'order_no']
+        read_only_fields = ('order_no',)
+
+
+
+class RequestBodyOfFoodOrderUserPostSerializer(FoodOrderUserPostSerializer):
+    class Meta(FoodOrderUserPostSerializer.Meta):
+        fields = ["table", "remarks"]
 
 
 class TakeAwayFoodOrderPostSerializer(serializers.Serializer):
@@ -830,21 +842,32 @@ class DiscountByFoodSerializer(serializers.Serializer):
     discount_id = serializers.IntegerField()
     food_id_lists = serializers.ListSerializer(
         child=serializers.IntegerField())
+class FoodOrderStatusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FoodOrder
+        fields = ['status']
 
 
 class DiscountSerializer(serializers.ModelSerializer):
     image = Base64ImageField()
+    food_name = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Discount
-        # fields ='__all__'
-        exclude = ['deleted_at']
+        fields ='__all__'
+        # exclude = ['deleted_at']
 
     def create(self, validated_data):
         image = validated_data.pop('image', None)
         if image:
             return Discount.objects.create(image=image, **validated_data)
         return Discount.objects.create(**validated_data)
+
+    def get_food_name(self,obj):
+        if obj.food:
+            food_name = obj.food.name
+            return food_name
+        return None
 
 
 class FoodDetailsByDiscountSerializer(serializers.ModelSerializer):
@@ -875,7 +898,7 @@ class StaffFcmSerializer(serializers.Serializer):
 class OnlyFoodOrderIdSerializer(serializers.ModelSerializer):
     class Meta:
         model = FoodOrder
-        fields = ['id']
+        fields = ['id', 'order_no']
 
 
 class CollectPaymentSerializer(serializers.Serializer):
@@ -904,6 +927,17 @@ class PopUpSerializer(serializers.ModelSerializer):
             return None
 
 
+class DiscountPopUpSerializer(serializers.ModelSerializer):
+    #food = serializers.SerializerMethodField(read_only=True)
+    title = serializers.CharField(source='name')
+
+    class Meta:
+        model = Discount
+        fields = ['id', 'image', 'food', 'title', 'description',
+                  'serial_no', 'clickable', 'foods', 'restaurant']
+        # fields = '__all__'
+
+
 class SliderSerializer(serializers.ModelSerializer):
     discoutn_percentage = serializers.SerializerMethodField(read_only=True)
     image = Base64ImageField()
@@ -924,6 +958,23 @@ class SliderSerializer(serializers.ModelSerializer):
         if image:
             return Slider.objects.create(image=image, **validated_data)
         return Slider.objects.create(**validated_data)
+
+
+class DiscountSliderSerializer(serializers.ModelSerializer):
+    discoutn_percentage = serializers.SerializerMethodField(read_only=True)
+    title = serializers.CharField(source='name')
+
+    class Meta:
+        model = Discount
+        fields = ['id', 'discoutn_percentage', 'image', 'title',
+                  'description', 'serial_no', 'clickable', 'restaurant', 'food']
+
+    def get_discoutn_percentage(self, obj):
+        discount_percentage = 0.0
+        if obj.food:
+            if obj.food.discount:
+                discount_percentage = obj.food.discount.amount
+        return discount_percentage
 
 
 class ReOrderedItemSerializer(serializers.Serializer):
@@ -957,11 +1008,14 @@ class RestaurantMessagesSerializer(serializers.ModelSerializer):
         model = RestaurantMessages
         fields = '__all__'
 
+
 class FcmNotificationListSerializer(serializers.ModelSerializer):
     restaurant_name = serializers.CharField(source='restaurant.name')
+
     class Meta:
         model = FcmNotificationCustomer
-        fields = ['id','restaurant','restaurant_name','title','body','created_at']
+        fields = ['id', 'restaurant', 'restaurant_name',
+                  'title', 'body', 'created_at']
 
 
 class FcmNotificationStaffSerializer(serializers.ModelSerializer):
@@ -1035,7 +1089,7 @@ class ServedOrderSerializer(serializers.ModelSerializer):
         model = Action
         fields = ['staff', 'order', 'created_at']
 
-    def get_staff(self,obj):
+    def get_staff(self, obj):
         if obj:
             staff = obj.actor.pk
             return staff
@@ -1044,18 +1098,18 @@ class ServedOrderSerializer(serializers.ModelSerializer):
         if obj:
             table_no = obj.action_object.table.table_no
             order_id = obj.action_object.pk
+            order_no = obj.action_object.order_no
             order_status = obj.action_object.status
             order_amaount = obj.action_object.payable_amount
             return {'table_id': table_no, 'order_id': order_id,
-                    'order_status': order_status,
+                    'order_no': order_no, 'order_status': order_status,
                     'order_amaount': order_amaount
                     }
 
-    def get_created_at(self,obj):
+    def get_created_at(self, obj):
         if obj:
             created_at = obj.timestamp
             return created_at
-
 
 
 class CustomerOrderDetailsSerializer(serializers.ModelSerializer):
@@ -1066,7 +1120,7 @@ class CustomerOrderDetailsSerializer(serializers.ModelSerializer):
     class Meta:
         model = FoodOrder
         fields = ['order_id', 'restaurant_name',
-                  'payable_amount', 'created_at']
+                  'payable_amount', 'created_at', 'order_no']
 
     # def get_table(self, obj):
     #     if obj.table:
@@ -1076,3 +1130,21 @@ class CustomerOrderDetailsSerializer(serializers.ModelSerializer):
     #         return {'table_id':table_id,
     #                 'table_no':table_no,
     #                 'restaurant_name':restaurant_name}
+
+
+class PrintNodeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PrintNode
+        fields = '__all__'
+
+
+class TakeAwayOrderSerializer(serializers.ModelSerializer):
+    running_order = serializers.SerializerMethodField(read_only=True)
+    class Meta:
+        model = TakeAwayOrder
+        fields = '__all__'
+
+    def get_running_order(self,obj):
+        if obj.running_order:
+            pass
+

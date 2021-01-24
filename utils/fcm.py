@@ -17,7 +17,12 @@ FCM_DJANGO_SETTINGS = {
 FCM_SERVER_KEY = FCM_DJANGO_SETTINGS.get('FCM_SERVER_KEY')
 
 
-def send_fcm_push_notification_appointment(tokens_list: list, status="CallStaff", table_no=0, msg='', staff_id_list: list = list(), qs=None):
+def send_fcm_push_notification_appointment(tokens_list: list, status="CallStaff", table_no=0, msg='', staff_id_list: list = list(), qs=None,**kwargs):
+    order_no =kwargs.get('order_no')
+    food_name= kwargs.get(('food_name'))
+    food_name_list= kwargs.get('food_names',[])
+    food_name_str = ' ,'.join(map(str,food_name_list))
+
     status_value = {
         "Received": {
             'notification': {'title': 'Received',
@@ -25,8 +30,8 @@ def send_fcm_push_notification_appointment(tokens_list: list, status="CallStaff"
             'data': {'title': '1', 'body': str(datetime.datetime.now())}
         },
         'Cooking': {
-            'notification': {'title': 'Cooking',
-                             'body': f'Your food is preparing {str(datetime.datetime.now())}'},
+            'notification': {'title': 'Order Verified',
+                             'body': f'Your food is preparing'},
             'data': {'title': '2', 'body': str(datetime.datetime.now())}
         },
         'WaiterHand': {
@@ -54,6 +59,21 @@ def send_fcm_push_notification_appointment(tokens_list: list, status="CallStaff"
             'notification': {'title': 'Calling Waiter for payment',
                              'body': f'Customer from table no {str(table_no)} is looking for you for {str(msg)} payment'},
             'data': {'title': '8', 'body': str(datetime.datetime.now())}
+        },
+        'OrderCancel': {
+            'notification':{'title':'Order Cancel',
+                            'body':f'Your order has been cancelled'},
+            'data':{'title':'9', 'body': str(datetime.datetime.now())}
+        },
+        'OrderItemsCancel': {
+            'notification': {'title': 'Item cancel',
+                             'body': f'{food_name_str} has been cancelled from your cart'},
+            'data': {'title': '9', 'body': str(datetime.datetime.now())}
+        },
+        'OrderItemCancel': {
+            'notification': {'title': 'Item cancel',
+                             'body': f'{food_name} has been cancelled from your cart'},
+            'data': {'title': '9', 'body': str(datetime.datetime.now())}
         },
 
 
@@ -95,6 +115,7 @@ def send_fcm_push_notification_appointment(tokens_list: list, status="CallStaff"
                     fcm_notification_staff_obj_list, ignore_conflicts=True)
 
     except Exception as e:
-        print("FCm Exception ", e)
+        # print("FCm Exception ", e)
+        pass
 
     return success

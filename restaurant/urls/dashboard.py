@@ -285,4 +285,14 @@ dashboard_urls = [
     path('review_list/<int:restaurant>/',
          ReviewViewset.as_view({'get': 'review_list'}, name='review_list')),
 
+    path('print_node/',
+         PrintNodeViewSet.as_view({'get': 'list', 'post':'print_node_create'}, name='all_print_node')),
+
+    path('print_node/<int:pk>/',
+         PrintNodeViewSet.as_view({'patch': 'print_node_update','delete':'print_node_destroy','get':'retrieve'}, name='print_node')),
+    path('print_node_list/<int:restaurant_id>/',
+         PrintNodeViewSet.as_view({'get': 'print_node_list'}, name='print_node_list')),
+    path('take_away_order/<int:restaurant_id>/',
+         TakeAwayOrderViewSet.as_view({'get': 'take_away_order'}, name='take_away_order')),
+
 ] + fake_dashboard_urls

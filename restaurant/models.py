@@ -7,6 +7,7 @@ from django.db.models import JSONField
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import manager
+from django.db.models.fields import DecimalField
 from django.db.models.fields.related import OneToOneField
 from softdelete.models import SoftDeleteModel
 
@@ -195,6 +196,7 @@ class FoodOrder(SoftDeleteModel):
         ("6_CANCELLED", "Cancelled"),
 
     ]
+    order_no = models.CharField(max_length=200, null=True, blank=True)
     remarks = models.TextField(null=True, blank=True)
     table = models.ForeignKey(
         Table, on_delete=models.SET_NULL, null=True, related_name='food_orders')
@@ -217,10 +219,16 @@ class FoodOrder(SoftDeleteModel):
         to=Restaurant, on_delete=models.SET_NULL, null=True, blank=True, related_name='food_orders')
 
     def __str__(self):
-        if self.table:
-            return str(self.id)
+        if self.order_no:
+            return str(self.order_no)
         else:
-            return 'table null'
+            return 'order no null'
+
+    # class Meta:
+    #     constraints = [
+    #         models.UniqueConstraint(
+    #             fields=['restaurant', 'order_no'], name='restaurant and order_no constrains'),
+    #     ]
 
 
 class FoodOrderLog(SoftDeleteModel):
@@ -280,7 +288,7 @@ class Invoice(SoftDeleteModel):
         choices=STATUS, max_length=25, default="0_UNPAID")
 
 
-class Discount(SoftDeleteModel):
+class Discount(models.Model):
     DISCOUNT_TYPE = [
         ("PERCENTAGE", "percentage"), ("AMOUNT", "amount")]
 
@@ -297,6 +305,8 @@ class Discount(SoftDeleteModel):
     restaurant = models.ForeignKey(
         Restaurant, on_delete=models.SET_NULL, related_name='discount', null=True)
     is_popup = models.BooleanField(default=False)
+    is_slider = models.BooleanField(default=False)
+
     serial_no = models.IntegerField(default=0)
     clickable = models.BooleanField(default=False)
     food = models.ForeignKey(
@@ -318,6 +328,20 @@ class Discount(SoftDeleteModel):
 
     # def __str__(self):
     #     return self.name
+
+
+class ParentCompanyPromotion(models.Model):
+    PROMO_TYPE = [
+        ("PERCENTAGE", "percentage"), ("AMOUNT", "amount")]
+    code = models.CharField(max_length=200, unique=True)
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField()
+    promo_type = models.CharField(choices=PROMO_TYPE, max_length=50)
+    max_amount = models.FloatField(default=0)
+    minimum_purchase_amount = models.FloatField(default=0)
+    amount = models.FloatField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    restaurant = models.ManyToManyField(Restaurant)
 
 
 class PopUp(models.Model):
@@ -375,3 +399,23 @@ class VersionUpdate(models.Model):
 
     # def __str__(self):
     #     return self.version_id
+
+
+class PrintNode(models.Model):
+    restaurant = models.ForeignKey(
+        to=Restaurant, on_delete=models.SET_NULL, null=True, related_name='print_nodes')
+    printer_id = models.IntegerField(null=True, blank=True)
+
+    def __str__(self):
+        return self.restaurant
+
+
+class TakeAwayOrder(models.Model):
+    restaurant = models.ForeignKey(
+        to=Restaurant, on_delete=models.SET_NULL, null=True, related_name='take_away_orders')
+    running_order = models.ManyToManyField(
+        to='FoodOrder', blank=True, related_name='take_away_orders')
+    assigned_staff = models.ManyToManyField(
+        to='account_management.HotelStaffInformation', blank=True, related_name='take_away_orders')
+    # def __str__(self):
+    #     return self.restaurant
