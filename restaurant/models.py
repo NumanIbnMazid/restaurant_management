@@ -217,6 +217,7 @@ class FoodOrder(SoftDeleteModel):
         to='account_management.CustomerInfo', on_delete=models.SET_NULL, null=True, blank=True, related_name='food_orders')
     restaurant = models.ForeignKey(
         to=Restaurant, on_delete=models.SET_NULL, null=True, blank=True, related_name='food_orders')
+    applied_promo_code = models.CharField(max_length=250,null=True,blank=True)
 
     def __str__(self):
         if self.order_no:
@@ -407,7 +408,7 @@ class PrintNode(models.Model):
     printer_id = models.IntegerField(null=True, blank=True)
 
     def __str__(self):
-        return self.restaurant
+        return self.restaurant.name
 
 
 class TakeAwayOrder(models.Model):

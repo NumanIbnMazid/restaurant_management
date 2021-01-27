@@ -15,7 +15,7 @@ class DiscountAdmin(admin.ModelAdmin):
     list_display = ['id', 'name','restaurant']
 
 class TableAdmin(admin.ModelAdmin):
-    list_display = ['id', 'name', 'restaurant','is_occupied']
+    list_display = ['id', 'name','table_no', 'restaurant','is_occupied']
 
 
 class FoodOrderAdmin(admin.ModelAdmin):
@@ -82,3 +82,5 @@ admin.site.register(PaymentType)
 admin.site.register(VersionUpdate)
 admin.site.register(PrintNode,PrintNodeAdmin)
 admin.site.register(TakeAwayOrder,TakeAwayOrderAdmin)
+admin.site.register(ParentCompanyPromotion,)
+
