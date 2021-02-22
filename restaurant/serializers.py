@@ -278,6 +278,11 @@ class PaymentSerializer(serializers.Serializer):
     order_id = serializers.IntegerField()
 
 
+class PaymentWithAmaountSerializer(serializers.Serializer):
+    order_id = serializers.IntegerField()
+    payment_method = serializers.IntegerField(required=False)
+    cash_received = serializers.IntegerField(required=False)
+
 class ReorderSerializer(serializers.Serializer):
     order_id = serializers.IntegerField()
     table_id = serializers.IntegerField()
@@ -344,6 +349,7 @@ class FreeTableSerializer(serializers.ModelSerializer):
 
 class FoodOrderByTableSerializer(serializers.ModelSerializer):
     status_details = serializers.CharField(source='get_status_display')
+    # payment_method = serializers.CharField(source='payment_method.name')
     # table_name = serializers.CharField(source="table.name")
     table_name = serializers.SerializerMethodField(read_only=True)
     table_no = serializers.SerializerMethodField(read_only=True)
@@ -362,6 +368,7 @@ class FoodOrderByTableSerializer(serializers.ModelSerializer):
                   "table",
                   "status",
                   'status_details',
+
                   "price",
                   'ordered_items',
                   'table_name',
@@ -850,10 +857,46 @@ class FoodOrderStatusSerializer(serializers.ModelSerializer):
         model = FoodOrder
         fields = ['status']
 
+class DiscountPostSerializer(serializers.ModelSerializer):
+    image = Base64ImageField()
+    food_id_list = serializers.ListSerializer(child=serializers.IntegerField(),write_only=True, required=False)
+
+    class Meta:
+        model = Discount
+        fields = '__all__'
+
+    def create(self, validated_data):
+        image = validated_data.pop('image', None)
+        food_id_list = validated_data.pop('food_id_list',[])
+        if image:
+            discount_qs = Discount.objects.create(image=image, **validated_data)
+        else:
+            discount_qs = Discount.objects.create(**validated_data)
+        Food.objects.filter(pk__in=food_id_list).update(discount=discount_qs)
+        return discount_qs
+
+    def update(self, instance, validated_data):
+        image = validated_data.pop('image', None)
+        food_id_list = validated_data.pop('food_id_list', [])
+
+        if image:
+            instance.image = image
+            instance.save()
+        discount_id = instance.pk
+        discount_removal_food_qs = Food.objects.filter(discount_id=discount_id).exclude(pk__in=food_id_list).update(discount=None)
+        discount_addition_food_qs = Food.objects.filter(pk__in=food_id_list).exclude(discount_id=discount_id).update(
+            discount_id=discount_id)
+
+
+        return super(DiscountPostSerializer, self).update(instance, validated_data)
+
+
+
 
 class DiscountSerializer(serializers.ModelSerializer):
     image = Base64ImageField()
     food_name = serializers.SerializerMethodField(read_only=True)
+    food_detail_list = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Discount
@@ -866,11 +909,32 @@ class DiscountSerializer(serializers.ModelSerializer):
             return Discount.objects.create(image=image, **validated_data)
         return Discount.objects.create(**validated_data)
 
+    def get_food_detail_list(self, obj):
+        if obj:
+            # food_name = obj.food.name
+            food_name_dict = {}
+            discount_id = obj.id
+            restaurant_id = obj.restaurant
+            food_qs_list = Food.objects.filter(discount_id=discount_id, restaurant_id=restaurant_id)
+
+            # for food_qs in food_qs_list:
+            #     food_name_dict['name'] = food_qs.name
+            # #     append
+            food_name_list = food_qs_list.values_list('name', flat=True)
+            food_id_list = food_qs_list.values_list('id', flat=True)
+
+            return {'food_id_list':food_id_list,
+                'food_name_list':food_name_list,
+                    }
+            # return food_name
+
+        return None
     def get_food_name(self, obj):
         if obj.food:
             food_name = obj.food.name
             return food_name
-        return None
+        else:
+            return None
 
 
 class FoodDetailsByDiscountSerializer(serializers.ModelSerializer):
@@ -896,7 +960,6 @@ class ReportByDateRangeSerializer(serializers.Serializer):
 
 class StaffFcmSerializer(serializers.Serializer):
     table_id = serializers.IntegerField()
-
 
 class OnlyFoodOrderIdSerializer(serializers.ModelSerializer):
     class Meta:
@@ -987,10 +1050,13 @@ class ReOrderedItemSerializer(serializers.Serializer):
 
 class ReviewSerializer(serializers.ModelSerializer):
     customer_info = serializers.SerializerMethodField(read_only=True)
+    order_id = serializers.IntegerField(source='order.id')
+    order_no = serializers.IntegerField(source='order.order_no')
+    # customer_info = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Review
-        fields = '__all__'
+        fields = ['id','order_id','order_no','customer_info','review_text','rating']
 
     def get_customer_info(self, obj):
         customer_qs = None

@@ -24,6 +24,7 @@ def send_fcm_push_notification_appointment(tokens_list: list, status="CallStaff"
     food_name = kwargs.get(('food_name'))
     food_name_list = kwargs.get('food_names', [])
     food_name_str = ' ,'.join(map(str, food_name_list))
+    tokens_list = list(set(tokens_list))
 
     status_value = {
         "Received": {
@@ -34,7 +35,8 @@ def send_fcm_push_notification_appointment(tokens_list: list, status="CallStaff"
         'Cooking': {
             'notification': {'title': 'Order Verified',
                              'body': f'Your food is preparing'},
-            'data': {'title': '2', 'body': str(datetime.datetime.now())}
+            'data': {'title': 'Order Verified',
+                             'body': f'Your food is preparing'}
         },
         'WaiterHand': {
             'notification': {'title': 'WaiterHand',
@@ -55,7 +57,10 @@ def send_fcm_push_notification_appointment(tokens_list: list, status="CallStaff"
             'notification': {'title': 'Calling Waiter',
                              #  'image': "http://manager.i-host.com.bd/logo.png",
                              'body': f'Customer from table no {str(table_no)} is looking for you'},
-            'data': {'title': '7', 'body': str(datetime.datetime.now())}
+            'data': {'title': 'Calling Waiter',
+                     #  'image': "http://manager.i-host.com.bd/logo.png",
+                     'body': f'Customer from table no {str(table_no)} is looking for you'},
+
         },
         'CallStaffForPayment': {
             'notification': {'title': 'Calling Waiter for payment',
@@ -95,6 +100,16 @@ def send_fcm_push_notification_appointment(tokens_list: list, status="CallStaff"
         data = {
             "notification": status_value[status]['notification'],
             "data": status_value[status]['data'],
+            "apns": {
+                "headers": {
+                    'apns-priority': '10',
+                },
+                "payload": {
+                    "aps": {
+                        "sound": 'default',
+                    },
+                },
+            },
             "registration_ids": tokens_list
         }
         headers = {
@@ -118,6 +133,7 @@ def send_fcm_push_notification_appointment(tokens_list: list, status="CallStaff"
 
     except Exception as e:
         # print("FCm Exception ", e)
+        # done
         pass
 
     return success

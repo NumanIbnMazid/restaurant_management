@@ -218,6 +218,10 @@ class FoodOrder(SoftDeleteModel):
     restaurant = models.ForeignKey(
         to=Restaurant, on_delete=models.SET_NULL, null=True, blank=True, related_name='food_orders')
     applied_promo_code = models.CharField(max_length=250,null=True,blank=True)
+    cash_received = models.FloatField(null=True, blank=True)
+    change_amount = models.FloatField(null=True, blank=True)
+    payment_method = models.ForeignKey(
+        to='restaurant.PaymentType', on_delete=models.SET_NULL, null=True,blank=True, related_name='food_orders')
 
     def __str__(self):
         if self.order_no:
@@ -395,6 +399,7 @@ class VersionUpdate(models.Model):
     force_update = models.BooleanField(default=False)
     is_customer_app = models.BooleanField(default=False)
     is_waiter_app = models.BooleanField(default=False)
+    build_number = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -420,3 +425,24 @@ class TakeAwayOrder(models.Model):
         to='account_management.HotelStaffInformation', blank=True, related_name='take_away_orders')
     # def __str__(self):
     #     return self.restaurant
+
+class CashLog(models.Model):
+    restaurant = models.ForeignKey(
+        to=Restaurant, on_delete=models.SET_NULL, null=True, related_name='cash_logs')
+    starting_time = models.DateTimeField(auto_now_add=True)
+    ending_time = models.DateTimeField(null=True, blank=True)
+    in_cash_while_opening = models.FloatField(null=True, blank=True)
+    in_cash_while_closing = models.FloatField(null=True, blank=True)
+    total_received_payment = models.FloatField(null=True, blank= True)
+    total_cash_received = models.FloatField(null=True, blank= True)
+    remarks = models.TextField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+class WithdrawCash(models.Model):
+    cash_log = models.ForeignKey(
+        to=CashLog, on_delete=models.SET_NULL, null=True, related_name='withdraw_cashs')
+    amount = models.FloatField(null=True, blank=True)
+    withdraw_at = models.DateTimeField(auto_now=True)
+    details = models.TextField(null=True, blank=True)
+
+

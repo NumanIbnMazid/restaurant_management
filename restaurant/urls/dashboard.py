@@ -145,6 +145,9 @@ fake_dashboard_urls = [
     path('order/cart/items/',
          OrderedItemViewSet.as_view({'post': 'create'}, name='items')),
 
+    path('take_away_order/cart/items/',
+         OrderedItemViewSet.as_view({'post': 'create'}, name='items')),
+
 
     path('order/cart/items/<int:pk>/',
          OrderedItemViewSet.as_view({'patch': 'update', 'delete': 'destroy'}, name='items')),
@@ -168,7 +171,7 @@ fake_dashboard_urls = [
     path('order/status/in_table/',
          FoodOrderViewSet.as_view({'post': 'in_table_status'}, name='in_table_status')),
     path('order/create_invoice/',
-         FoodOrderViewSet.as_view({'post': 'create_invoice'}, name='create_invoice')),
+         FoodOrderViewSet.as_view({'post': 'create_invoice_for_dashboard'}, name='create_invoice')),
     path('order/confirm_payment/',
          FoodOrderViewSet.as_view({'post': 'payment'}, name='confirm_payment')),
 
@@ -240,7 +243,7 @@ dashboard_urls = [
          DiscountViewSet.as_view({'post': 'create_discount'}), name='create_discount'),
     path('delete_discount/<int:discount_id>',
          DiscountViewSet.as_view({'delete': 'delete_discount'}), name='delete_discount'),
-    path('update_discount/<int:pk>',
+    path('discount/<int:pk>',
          DiscountViewSet.as_view({'patch': 'update_discount'}), name='update_discount'),
     path('food_discount/',
          DiscountViewSet.as_view({'post': 'food_discount'}), name='food_discount'),
