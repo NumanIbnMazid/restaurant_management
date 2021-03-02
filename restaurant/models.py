@@ -196,6 +196,10 @@ class FoodOrder(SoftDeleteModel):
         ("6_CANCELLED", "Cancelled"),
 
     ]
+    # DISCOUNT_STATUS = [
+    #     ("Percentage","percentage"),
+    #     ("Amount","Amount"),
+    # ]
     order_no = models.CharField(max_length=200, null=True, blank=True)
     remarks = models.TextField(null=True, blank=True)
     table = models.ForeignKey(
@@ -222,6 +226,10 @@ class FoodOrder(SoftDeleteModel):
     change_amount = models.FloatField(null=True, blank=True)
     payment_method = models.ForeignKey(
         to='restaurant.PaymentType', on_delete=models.SET_NULL, null=True,blank=True, related_name='food_orders')
+    discount_given = models.FloatField(null=True, blank=True)
+    discount_amount_is_percentage = models.BooleanField(default=False)
+    discount_base_amount = models.FloatField(default=False)
+
 
     def __str__(self):
         if self.order_no:
@@ -296,6 +304,10 @@ class Invoice(SoftDeleteModel):
 class Discount(models.Model):
     DISCOUNT_TYPE = [
         ("PERCENTAGE", "percentage"), ("AMOUNT", "amount")]
+    DISCOUNT_SCHEDULE_TYPE = [
+        ('Time_wise_offer', 'Time wise offer'),
+        ('Date_wise_offer', 'Date wise offer')
+    ]
 
     name = models.CharField(max_length=200)
     image = models.ImageField(blank=True)
@@ -317,11 +329,15 @@ class Discount(models.Model):
     food = models.ForeignKey(
         Food, on_delete=models.SET_NULL, related_name='discount_slider', null=True)
 
-    # discount_slot_start_time = models.TimeField(null=True, blank=True)
-    # discounut_slot_closing_time = models.TimeField(null=True, blank=True)
+    discount_schedule_type = models.CharField(choices=DISCOUNT_SCHEDULE_TYPE,
+                                              max_length=50, default="Date_wise_offer")
+
+    discount_slot_start_time = models.TimeField(null=True, blank=True)
+    discount_slot_closing_time = models.TimeField(null=True, blank=True)
 
     # discount_type = models.CharField(choices=DISCOUNT_TYPE,
     #                                  max_length=50, default="PERCENTAGE")
+
     amount = models.FloatField()
     # max_discount_amount = models.FloatField(null=True, blank=True)
     # number_of_uses = models.PositiveIntegerField(default=0)
