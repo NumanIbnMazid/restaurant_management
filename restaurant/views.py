@@ -2873,20 +2873,22 @@ class InvoiceViewSet(LoggingMixin, CustomViewSet):
         end_date += timedelta(days=1)
         if item_list:
             food_items_date_range_qs = Invoice.objects.filter(Q(order__ordered_items__status='3_IN_TABLE') & Q(order__ordered_items__food_option__food_id__in=item_list), restaurant_id=restaurant,
-                                                              created_at__gte=start_date, created_at__lte=end_date).distinct()
+                                                              created_at__gte=start_date, created_at__lte=end_date,payment_status='1_PAID').order_by('-created_at').distinct()
         elif category_list:
             food_items_date_range_qs = Invoice.objects.filter(restaurant_id=restaurant,
                                                               created_at__gte=start_date, created_at__lte=end_date,
-                                                              order__ordered_items__food_option__food__category_id__in=category_list
-                                                              ).distinct()
+                                                              order__ordered_items__food_option__food__category_id__in=category_list,
+                                                              payment_status='1_PAID'
+                                                              ).order_by('-created_at').distinct()
         elif waiter_list:
             food_items_date_range_qs = Invoice.objects.filter(order__restaurant_id=restaurant, created_at__gte=start_date, created_at__lte=end_date,
-                                                              order__food_order_logs__staff_id__in=waiter_list
-                                                              ).distinct()
+                                                              order__food_order_logs__staff_id__in=waiter_list,payment_status='1_PAID'
+                                                              ).order_by('-created_at').distinct()
         else:
             food_items_date_range_qs = Invoice.objects.filter(restaurant_id=restaurant,
-                                                              created_at__gte=start_date, created_at__lte=end_date
-                                                              ).distinct()
+                                                              created_at__gte=start_date, created_at__lte=end_date,
+                                                              payment_status='1_PAID'
+                                                              ).order_by('-created_at').distinct()
 
         total_order = food_items_date_range_qs.count()
         total_payable_amount = food_items_date_range_qs.values_list(
@@ -3233,6 +3235,8 @@ class DiscountViewSet(LoggingMixin, CustomViewSet):
         if not qs:
             return ResponseWrapper(error_msg=['Food order is not valid'], error_code=400)
         discount_given = request.data.get('force_discount_amount')
+        if discount_given <=0:
+            return ResponseWrapper(error_msg=['Discount amount is not valid'], error_code=400)
         discount_amount_is_percentage = request.data.get('discount_amount_is_percentage')
         qs.discount_given = discount_given
         qs.discount_amount_is_percentage = discount_amount_is_percentage

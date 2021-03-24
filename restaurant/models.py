@@ -122,6 +122,8 @@ class Food(SoftDeleteModel):
     ingredients = models.TextField(null=True, blank=True)
     rating = models.FloatField(null=True, blank=True)
     order_counter = models.IntegerField(default=0)
+    is_available = models.BooleanField(default=True)
+    is_vat_applicable = models.BooleanField(default=True)
     discount = models.ForeignKey(
         to="restaurant.Discount", null=True, blank=True, on_delete=models.SET_NULL, related_name='foods')
 
@@ -276,8 +278,6 @@ class OrderedItem(models.Model):
         choices=ITEM_STATUS, default="0_ORDER_INITIALIZED", max_length=120)
 
     """
-    
-    
     order - > extra sort type wise
     food extra option type separate
     customer table separate
@@ -307,8 +307,8 @@ class Discount(models.Model):
     DISCOUNT_TYPE = [
         ("PERCENTAGE", "percentage"), ("AMOUNT", "amount")]
     DISCOUNT_SCHEDULE_TYPE = [
-        ('Time_wise_offer', 'Time wise offer'),
-        ('Date_wise_offer', 'Date wise offer')
+        ('Time_wise', 'Time wise'),
+        ('Date_wise', 'Date wise')
     ]
 
     name = models.CharField(max_length=200)
@@ -332,7 +332,7 @@ class Discount(models.Model):
         Food, on_delete=models.SET_NULL, related_name='discount_slider', null=True)
 
     discount_schedule_type = models.CharField(choices=DISCOUNT_SCHEDULE_TYPE,
-                                              max_length=50, default="Date_wise_offer")
+                                              max_length=50, default="Date_wise")
 
     discount_slot_start_time = models.TimeField(null=True, blank=True)
     discount_slot_closing_time = models.TimeField(null=True, blank=True)

@@ -6,13 +6,23 @@ class SubscriptionAdmin(admin.ModelAdmin):
     list_display = ['id','code', 'title']
 
 class InvoiceAdmin(admin.ModelAdmin):
-    list_display = ['id', 'created_at', 'updated_at', 'restaurant']
+    list_display = ['id','order_id','order', 'restaurant','grand_total','tax_amount','discount_amount','payable_amount','created_at']
+    list_filter = ('restaurant','payment_status')
+
+    def order_id(self,obj):
+        return obj.order.id
+
+    def discount_amount(self, obj):
+        return obj.order.discount_amount
+
+    def tax_amount(self, obj):
+        return obj.order.tax_amount
 
 class FoodOrderLogAdmin(admin.ModelAdmin):
     list_display = ['id', 'order', 'staff', 'order_status']
 
 class DiscountAdmin(admin.ModelAdmin):
-    list_display = ['id', 'name','restaurant']
+    list_display = ['id', 'name','restaurant','discount_schedule_type']
 
 class TableAdmin(admin.ModelAdmin):
     list_display = ['id', 'name','table_no', 'restaurant','is_occupied']
@@ -26,6 +36,8 @@ class OrderedItemAdmin(admin.ModelAdmin):
 
 class FoodCategoryAdmin(admin.ModelAdmin):
     list_display = ['id','name']
+
+
 class FoodExtraTypeAdmin(admin.ModelAdmin):
     list_display = ['id','name']
 
@@ -67,7 +79,10 @@ class PromoCodePromotionAdmin(admin.ModelAdmin):
 class PromoCodePromotionLogAdmin(admin.ModelAdmin):
     list_display = ['id','promo_code', 'customer']
 
-admin.site.register(Restaurant)
+class RestaurantAdmin(admin.ModelAdmin):
+    list_display = ['id','name','is_service_charge_apply_in_original_food_price','is_vat_charge_apply_in_original_food_price']
+
+admin.site.register(Restaurant,RestaurantAdmin)
 admin.site.register(FoodOrderLog,FoodOrderLogAdmin)
 admin.site.register(Subscription, SubscriptionAdmin)
 admin.site.register(RestaurantContactPerson)
