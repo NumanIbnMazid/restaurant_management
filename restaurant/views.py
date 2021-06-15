@@ -3471,6 +3471,7 @@ class RestaurantMessagesViewset(LoggingMixin, CustomViewSet):
     def all_restaurant_messages_list(self, request, *args, **kwargs):
         notification_list_qs = FcmNotificationCustomer.objects.all().order_by(
             '-created_at')[:10]
+
         serializer = FcmNotificationListSerializer(
             instance=notification_list_qs, many=True)
         return ResponseWrapper(data=serializer.data, msg='success')
