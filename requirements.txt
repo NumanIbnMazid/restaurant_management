@@ -127,7 +127,7 @@ toml==0.10.1
 tornado==6.1
 tqdm==4.51.0
 traitlets==5.0.5
-Twisted==20.3.0
+Twisted==21.2.0
 txaio==20.4.1
 uritemplate==3.0.1
 urllib3==1.25.8
